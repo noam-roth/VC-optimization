@@ -43,14 +43,12 @@ def selection(edges, solutions, max_population):
         if (i + 1) == max_population:
             break
     lst = output_lst
-    # Return truncated-population and best score of this Generation
+
     return lst, fitness_score_list[sorted_index[0]]
 
 
-# We combine two solutions in order to get even a better solution.
-# take two solutions, find the vertices in the first solution which are not present in the second solution,
-# and similarly take vertices in the second solution which are not present in the first solution and swap 50% of them.
-# Swap 50% unique vertices from Solution2 into Solution1
+# Given two solutions, we find the vertices in the first solution which are not present in the second solution,
+# and similarly this process for the second solution, and finally wap 50% unique vertices from solution1 into solution2.
 def crossover(edges, amount_of_nodes, solutions):
     crossover_prob = 0.5
     next_generation_solutions = copy.deepcopy(solutions)
@@ -71,15 +69,10 @@ def crossover(edges, amount_of_nodes, solutions):
     return next_generation_solutions
 
 
-# new solutions coming out from the Crossover-state change themselves slightly
-# or alternatively mutate in the hope to get even better.
-# In this problem, I perform two types of mutations changing 5% of the solution.
-# I toss a coin and if the head comes, I perform Mutation-1
-# else perform Mutation-2 both changing 5% of the solution differently.
-# In Mutation-1, I take random 5% of vertices from the solution
-# and replace it by some other random 5% vertices which were not in the solution before.
-# In Mutation-2, I take random 5% of vertices from the solution and replace it by some other 5% vertices which can cover
-# some of the edges which the current solution is fails to cover.
+# We did two types of mutations changing 5% of the solution. There is an equal chance for each mutation to be
+# selected. Mutation-1, we take random 5% of vertices from the solution and replace it by some other random 5%
+# vertices which were not in the solution before. In Mutation-2, we take random 5% of vertices from the solution and
+# replace it by some other 5% vertices which can cover some of the edges which the current solution is fails to cover.
 def mutation(new_sol, edges, amount_of_nodes):
     nodes_in_new_sol = []
     nodes_are_not_in_new_sol = []
@@ -126,6 +119,7 @@ def uncovered_edges(edges, solution):
     return set(my_list)
 
 
+# initialization --> evaluate --> selection --> crossover --> mutation.
 def genetic_algo_vc(amount_of_nodes, edges, k, initial_population, max_population, max_iterate):
     solutions = initialization(initial_population, amount_of_nodes, k)
     current_fitness_score = None
@@ -144,21 +138,21 @@ def genetic_algo_vc(amount_of_nodes, edges, k, initial_population, max_populatio
     return result, current_fitness_score
 
 
+# We need to find the optimal k for the VC, so we do a binary search, and for each k, run the genetic algo,
+# and finally take the smallest VC.
 def find_optimal_k(amount_of_nodes, pop_init, pop_total, max_iterate, edges, start, end):
     # measure time:
     start_time = time.time()
     result_dict = {}
-    l = start
-    h = end
-    while l <= h:
-        m = int((l + h) / 2.0)
-        result, cost_value = genetic_algo_vc(amount_of_nodes, edges, m, pop_init, pop_total, max_iterate)
+    while start <= end:
+        middle = int((start + end) / 2.0)
+        result, cost_value = genetic_algo_vc(amount_of_nodes, edges, middle, pop_init, pop_total, max_iterate)
         if cost_value == 0:
             print("Find VC but I'm not sure it's minimum VC!")
-            result_dict[m] = result
-            h = m - 1
+            result_dict[middle] = result
+            end = middle - 1
         else:
-            l = m + 1
+            start = middle + 1
     return result_dict, time.time() - start_time
 
 
@@ -169,7 +163,6 @@ def main(size, edges, my_pos):
         run_time = 0
         results = {}
     else:
-        # amount_of_nodes, pop_init, pop_total, max_iterate, edges, start, end
         results, run_time = find_optimal_k(n, pop_init, pop_total, max_iterate, edges, 1, n)
     print("runtime = " + str(run_time))
     print("Genetic_Algorithm_VC results:")
@@ -177,7 +170,7 @@ def main(size, edges, my_pos):
         vc = []
     else:
         vc = results[min(results.keys())]
-    # vc, fitness_score = genetic_algo_vc(n, edges, k, pop_init, pop_total, max_iterate)
+
     color_map = ['lightgreen' if node in vc else 'r' for node in range(n)]
     display_graph(G, my_pos, color_map, title='Genetic Algorithm: VC in green and others in red\n|VC| = {0}\nAlgorithm '
                                               'run time: {1}'.format(len(vc),
